@@ -89,25 +89,6 @@ class MyEventHandler(FileSystemEventHandler):
         except Exception as e:
             print(f"Error handling event {event.event_type} for {event.src_path}: {e}")
 
-
-def read_ini():
-    # 读取配置文件
-    config = configparser.ConfigParser()
-    config.read('/path/to/config.ini')
-
-    # 获取 server1 和 server2 的 folder 参数
-    server1_folder = config.get('server1', 'folder')
-    server2_folder = config.get('server2', 'folder')
-
-    # 更新事件处理程序和观察者的路径
-    event_handler = MyEventHandler(server1_folder, server2_folder)
-    observer.schedule(event_handler, server1_folder, recursive=True)
-
-    # 同步文件夹 server1_folder 和 server2_folder
-    sync_folders_with_progress(server1_folder, server2_folder)
-    sync_folders_with_progress(server2_folder, server1_folder)
-
-
 # 同步文件夹并显示进度
 def sync_folders_with_progress(src, dest):
     src_files = []
@@ -146,14 +127,27 @@ def sync_folders_with_progress(src, dest):
                     shutil.copy2(dest_file, src_file)
                 pbar.update(1)
 
-event_handler = MyEventHandler("A", "B") # 创建事件处理程序对象
+def read_ini(ini_path='./config.ini'):
+    # 读取配置文件
+    config = configparser.ConfigParser()
+    config.read(ini_path)
+
+    # 获取 server1 和 server2 的 folder 参数
+    server1_folder = config.get('server1', 'folder')
+    server2_folder = config.get('server2', 'folder')
+
+    return server1_folder, server2_folder
+
+# 读取配置文件
+server1_folder, server2_folder = read_ini()
+event_handler = MyEventHandler(server1_folder, server2_folder) # 创建事件处理程序对象
 observer = Observer() # 创建观察者对象
 
 # 同步文件夹 A 和 B
-sync_folders_with_progress("A", "B") # 同步 A 到 B
-sync_folders_with_progress("B", "A") # 同步 B 到 A
+sync_folders_with_progress(server1_folder, server2_folder) # 同步 A 到 B
+sync_folders_with_progress(server2_folder, server1_folder) # 同步 B 到 A
 
-observer.schedule(event_handler, "A", recursive=True) # 监视 A 目录
+observer.schedule(event_handler, server1_folder, recursive=True) # 监视 A 目录
 observer.start()
 
 try:
